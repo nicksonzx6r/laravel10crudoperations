@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Http\Requests\ProductStoreRequest;
 use App\Http\Requests\ProductUpdateRequest;
 use App\Models\Product;
+use App\Models\User;
+use App\Notifications\NewProductNotification;
 use Illuminate\Database\QueryException;
 use App\Constants\Product as ProductConstants;
 
@@ -34,7 +36,17 @@ class ProductController extends Controller
     {
         try {
             // create a new product with validated request data
-            Product::create($request->validated());
+            $product = Product::create($request->validated());
+
+            // notify all users about the new product
+            // This sends a notification to all users in the system about the new product.
+            // It loops through all users and sends them a NewProductNotification object
+            // with the new product as a parameter.
+            $users = User::all();
+            foreach ($users as $user) {
+                $user->notify(new NewProductNotification($product));
+            }
+
             // redirect to index with success message
             return redirect()->route('products.index')
                 ->with('success', ProductConstants::PRODUCT_CREATED);
